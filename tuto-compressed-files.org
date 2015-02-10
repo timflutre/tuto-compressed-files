@@ -1,0 +1,126 @@
+#+title: Tutorial on (un)compressing files
+#+author: Timothée Flutre
+
+#+latex_class_options: [a4paper]
+#+latex_header: \setlength{\parindent}{0pt}
+#+latex_header: \textwidth 16cm
+#+latex_header: \oddsidemargin 0.5cm
+#+latex_header: \evensidemargin 0.5cm
+
+This document is under a license [[http://creativecommons.org/licenses/by-sa/4.0/][Creative Commons BY-SA 4.0]].
+
+* Introduction
+
+When working with data, everyone usually starts by playing with text files, but these files can soon become very large!
+For instance, it is now frequent for a DNA sequencing project to generate Tb of data...
+To save disk space, normal text files (i.e. not binary files) can often be compressed to 10% of their original size.
+
+If one uses the gzip compression algorithm (or bzip2), under many circumstances one can interact with the file as if it were not compressed, always (un)compressing on the fly.
+These days processors are fast enough that it hardly takes more time to read and uncompress than it simply takes to read.
+The only time you don't want to do this, is if you need random access to the file.
+
+Below are tips for interacting with gzipped files in different languages; don't hesitate to [[mailto:timothee.flutre@supagro.inra.fr][contact me]] if you want to improve this document.
+The document itself is versioned with git and hosted on [[https://github.com/timflutre/tuto-compressed-files][GitHub]].
+
+* Bash
+https://www.gnu.org/software/gzip/
+
+Make a test file and compress it with gzip:
+#+begin_src sh
+echo -e "a\t1\nb\t2" | gzip > example.txt.gz
+#+end_src
+
+Look at the content of the file:
+#+begin_src sh
+zcat example.txt.gz | less
+#+end_src
+
+Count the number of lines:
+#+begin_src sh
+zcat example.txt.gz | wc -l
+#+end_src
+
+Extract the second column:
+#+begin_src sh
+zcat example.txt.gz | cut -f 2
+#+end_src
+
+Have also a look at [[http://www.thegeekstuff.com/2009/05/zcat-zless-zgrep-zdiff-zcmp-zmore-gzip-file-operations-on-the-compressed-files/][this]].
+
+* R
+http://stat.ethz.ch/R-manual/R-devel/library/base/html/connections.html
+
+Make a test data set:
+#+begin_src R
+df <- data.frame(x=rbinom(n=10, size=2, prob=0.3),
+                 y=rnorm(n=10, mean=0, sd=1))
+#+end_src
+
+Write the data frame as a gzipped file:
+#+begin_src R
+write.table(df, file=gzfile("example.txt.gz"))
+#+end_src
+
+Read the gzipped file as a data.frame:
+#+begin_src R
+df <- read.table(file=gzfile("example.txt.gz"), header=TRUE)
+#+end_src
+
+* Python
+https://docs.python.org/2/library/gzip.html
+
+Make a test file and compress it with gzip:
+#+begin_src python
+import sys, os, gzip
+f = gzip.open("example.txt.gz", "w")
+f.writelines("a\t1\nb\t2\n")
+f.close()
+#+end_src
+
+Read the content of the file:
+#+begin_src python
+import sys, os, gzip
+f = gzip.open("example.txt.gz")
+line = f.readline()
+while line:
+    print line
+    line = f.readline()
+f.close()
+#+end_src
+
+* Perl
+http://perldoc.perl.org/IO/Compress/Gzip.html
+
+http://perldoc.perl.org/IO/Uncompress/Gunzip.html
+
+Make a test file and compress it with gzip:
+#+begin_src perl
+use IO::Compress::Gzip qw(gzip $GzipError);
+my $f = new IO::Compress::Gzip "example.txt.gz"
+    or die "IO::Compress::Gzip failed: $GzipError\n";
+$f->print("a\t1\nb\t2\n");
+$f->close() ;
+#+end_src
+
+Read the content of the file:
+#+begin_src perl
+use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
+my $f = new IO::Uncompress::Gunzip "example.txt.gz"
+    or die "IO::Uncompress::Gunzip failed: $GunzipError\n";
+while( my $line = $f->getline() ) {
+    print $line;
+}
+$f->close() ;
+#+end_src
+
+* C/C++
+http://zlib.net/
+
+Include the header of the =zlib= library:
+#+begin_src c
+#include "zlib.h"
+#+end_src
+
+and then use =gzopen=, =gzclose=, =gzgetc= and =gzputs=.
+
+A self-contained example is available [[http://openwetware.org/wiki/User:Timothee_Flutre/Notebook/Postdoc/2012/09/12][here]].
